@@ -1,0 +1,6 @@
+/build/
+/matrix.exe
+/.vs/
+/.idea/
+*.o
+*.obj
