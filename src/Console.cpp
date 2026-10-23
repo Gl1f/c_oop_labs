@@ -5,6 +5,7 @@ Console::Console() : output(GetStdHandle(STD_OUTPUT_HANDLE)) {
     ready = GetConsoleScreenBufferInfo(output, &originalInfo)
         && GetConsoleCursorInfo(output, &originalCursor);
     if (ready) {
+        frame.resize(getWidth() * getHeight());
         CONSOLE_CURSOR_INFO cursor = originalCursor;
         cursor.bVisible = FALSE;
         SetConsoleCursorInfo(output, &cursor);
@@ -44,11 +45,23 @@ void Console::clear() {
 
 void Console::draw(int x, int y, char value, WORD color) {
     if (x < 0 || x >= getWidth() || y < 0 || y >= getHeight()) return;
-    COORD position = {static_cast<SHORT>(originalInfo.srWindow.Left + x),
-        static_cast<SHORT>(originalInfo.srWindow.Top + y)};
-    DWORD written;
-    WriteConsoleOutputCharacterA(output, &value, 1, position, &written);
-    WriteConsoleOutputAttribute(output, &color, 1, position, &written);
+    CHAR_INFO& cell = frame[y * getWidth() + x];
+    cell.Char.AsciiChar = value;
+    cell.Attributes = color;
+}
+
+void Console::beginFrame() {
+    for (CHAR_INFO& cell : frame) {
+        cell.Char.AsciiChar = ' ';
+        cell.Attributes = originalInfo.wAttributes;
+    }
+}
+
+void Console::present() {
+    COORD size = {static_cast<SHORT>(getWidth()), static_cast<SHORT>(getHeight())};
+    COORD origin = {0, 0};
+    SMALL_RECT area = originalInfo.srWindow;
+    WriteConsoleOutputA(output, frame.data(), size, origin, &area);
 }
 
 bool Console::isExitPressed() const {

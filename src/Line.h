@@ -11,12 +11,17 @@ private:
     int step = 0;
     int pathLength;
     bool randomColor;
+    int speed; // Скорость этой линии в символах в секунду.
+    ULONGLONG startTime; // Запланированный момент рождения.
+    void crawl(); // Меняем голову и хвост на один символ.
 
 public:
-    Line(int lineLength, bool colorMode, const Console& console);
+    Line(int lineLength, int lineSpeed, bool colorMode,
+        const Console& console, ULONGLONG birthTime);
     ~Line();
     Line(const Line&) = delete; // Массив принадлежит только одной линии.
     Line& operator=(const Line&) = delete;
-    void crawl(Console& console); // Один новый символ и удаление хвоста.
+    bool update(ULONGLONG now); // Выполняем шаги, для которых уже настало время.
+    void draw(Console& console) const;
     bool isFinished() const;
 };

@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
+#include <algorithm>
 
 bool Application::parseNumber(const std::string& text, int& value) {
     if (text.empty()) return false;
@@ -26,6 +27,11 @@ bool Application::parseMode(const std::string& text, bool& value) {
 bool Application::readParameters() {
     std::string text;
     do {
+        if (!Console::readText("Frequency (1-30 lines/sec): ", text)) return false;
+        if (parseNumber(text, frequency)) break;
+        std::cout << "Enter an integer from 1 to 30.\n";
+    } while (true);
+    do {
         if (!Console::readText("Speed (1-30 symbols/sec): ", text)) return false;
         if (parseNumber(text, speed)) break;
         std::cout << "Enter an integer from 1 to 30.\n";
@@ -44,13 +50,35 @@ bool Application::readParameters() {
 }
 
 void Application::printHelp() {
-    std::cout << "Matrix - lab 1, student number 11\n"
-        "Usage: matrix.exe [speed length Y/N]\n"
+    std::cout << "Matrix - lab 2, student number 11\n"
+        "Usage: matrix.exe [frequency speed length Y/N]\n"
+        "Frequency: 1-30 lines per second, at random moments.\n"
         "Speed: 1-30 symbols per second. Length: 1-30 symbols.\n"
         "Y: random color for each symbol. N: green.\n"
         "Without arguments: interactive input.\n"
-        "Example: matrix.exe 23 8 Y\n"
+        "Example: matrix.exe 3 23 8 Y\n"
         "Variant: left to right, diamond. Press Esc to exit.\n";
+}
+
+void Application::planSecond() {
+    for (int index = 0; index < frequency; ++index)
+        spawnTimes[index] = std::rand() % 1001;
+    std::sort(spawnTimes, spawnTimes + frequency);
+    nextSpawn = 0;
+}
+
+void Application::spawnLines(ULONGLONG now, const Console& console) {
+    // Если кадр задержался, не теряем события предыдущих секунд.
+    while (true) {
+        while (nextSpawn < frequency && now >= secondStart + spawnTimes[nextSpawn]) {
+            ULONGLONG birthTime = secondStart + spawnTimes[nextSpawn];
+            lines.emplace_back(new Line(length, speed, colorMode, console, birthTime));
+            ++nextSpawn;
+        }
+        if (now < secondStart + 1000) break;
+        secondStart += 1000;
+        planSecond();
+    }
 }
 
 int Application::run(int argumentCount, char* arguments[]) {
@@ -61,8 +89,9 @@ int Application::run(int argumentCount, char* arguments[]) {
     }
     if (argumentCount == 1) {
         if (!readParameters()) return 1;
-    } else if (argumentCount != 4 || !parseNumber(arguments[1], speed)
-        || !parseNumber(arguments[2], length) || !parseMode(arguments[3], colorMode)) {
+    } else if (argumentCount != 5 || !parseNumber(arguments[1], frequency)
+        || !parseNumber(arguments[2], speed) || !parseNumber(arguments[3], length)
+        || !parseMode(arguments[4], colorMode)) {
         std::cerr << "Invalid parameters. Use matrix.exe --help.\n";
         return 1;
     }
@@ -74,16 +103,25 @@ int Application::run(int argumentCount, char* arguments[]) {
     }
     std::srand(static_cast<unsigned>(std::time(nullptr)));
     console.clear();
+    secondStart = GetTickCount64();
+    planSecond();
     while (!console.isExitPressed()) {
-        Line line(length, colorMode, console);
-        ULONGLONG start = GetTickCount64();
-        ULONGLONG steps = 0;
-        while (!line.isFinished() && !console.isExitPressed()) {
-            line.crawl(console);
-            ++steps;
-            // Считаем срок от начала, чтобы округление задержек не копилось.
-            console.waitUntil(start + steps * 1000 / speed);
+        ULONGLONG now = GetTickCount64();
+        spawnLines(now, console);
+        bool changed = false;
+        for (auto line = lines.begin(); line != lines.end();) {
+            if ((*line)->update(now)) changed = true;
+            if ((*line)->isFinished()) line = lines.erase(line);
+            else ++line;
         }
+        if (changed) {
+            // Собираем общий кадр: хвост одной линии не стирает другую.
+            console.beginFrame();
+            for (const auto& line : lines) line->draw(console);
+            console.present();
+        }
+        console.waitUntil(GetTickCount64() + 1);
     }
+    lines.clear();
     return 0;
 }

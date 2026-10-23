@@ -13,7 +13,6 @@ void Symbol::draw(Console& console) const {
     if (visible) console.draw(x, y, value, color);
 }
 
-void Symbol::erase(Console& console) {
-    if (visible) console.draw(x, y, ' ', 0);
+void Symbol::erase() {
     visible = false;
 }

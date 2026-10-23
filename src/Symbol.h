@@ -13,5 +13,5 @@ private:
 public:
     void create(int newX, int newY, bool randomColor);
     void draw(Console& console) const;
-    void erase(Console& console); // Убираем символ с хвоста.
+    void erase(); // Убираем символ с хвоста из состояния линии.
 };
