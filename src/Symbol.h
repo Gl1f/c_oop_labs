@@ -14,4 +14,6 @@ public:
     void create(int newX, int newY, bool randomColor);
     void draw(Console& console) const;
     void erase(); // Убираем символ с хвоста из состояния линии.
+    int getX() const;
+    int getY() const;
 };

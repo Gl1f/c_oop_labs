@@ -16,3 +16,6 @@ void Symbol::draw(Console& console) const {
 void Symbol::erase() {
     visible = false;
 }
+
+int Symbol::getX() const { return x; }
+int Symbol::getY() const { return y; }
