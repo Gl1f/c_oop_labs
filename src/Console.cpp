@@ -5,7 +5,9 @@ Console::Console() : output(GetStdHandle(STD_OUTPUT_HANDLE)) {
     ready = GetConsoleScreenBufferInfo(output, &originalInfo)
         && GetConsoleCursorInfo(output, &originalCursor);
     if (ready) {
-        frame.resize(getWidth() * getHeight());
+        int cellCount = getWidth() * getHeight();
+        frame.reserve(cellCount);
+        for (int index = 0; index < cellCount; ++index) frame.pushBack(CHAR_INFO{});
         CONSOLE_CURSOR_INFO cursor = originalCursor;
         cursor.bVisible = FALSE;
         SetConsoleCursorInfo(output, &cursor);
@@ -45,13 +47,14 @@ void Console::clear() {
 
 void Console::draw(int x, int y, char value, WORD color) {
     if (x < 0 || x >= getWidth() || y < 0 || y >= getHeight()) return;
-    CHAR_INFO& cell = frame[y * getWidth() + x];
+    CHAR_INFO& cell = frame.at(y * getWidth() + x);
     cell.Char.AsciiChar = value;
     cell.Attributes = color;
 }
 
 void Console::beginFrame() {
-    for (CHAR_INFO& cell : frame) {
+    for (int index = 0; index < frame.size(); ++index) {
+        CHAR_INFO& cell = frame.at(index);
         cell.Char.AsciiChar = ' ';
         cell.Attributes = originalInfo.wAttributes;
     }

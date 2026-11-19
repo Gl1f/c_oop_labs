@@ -1,7 +1,7 @@
 #pragma once
 #include <windows.h>
 #include <string>
-#include <vector>
+#include "ArrayList.h"
 
 // Работа с окном консоли и вводом.
 class Console {
@@ -10,7 +10,7 @@ private:
     CONSOLE_SCREEN_BUFFER_INFO originalInfo{};
     CONSOLE_CURSOR_INFO originalCursor{};
     bool ready = false;
-    std::vector<CHAR_INFO> frame; // Общий кадр для пересекающихся линий.
+    ArrayList<CHAR_INFO> frame; // Общий кадр для пересекающихся линий.
 
 public:
     Console(); // Запоминаем настройки консоли.

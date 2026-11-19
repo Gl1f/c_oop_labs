@@ -1,13 +1,11 @@
 #pragma once
 #include "Symbol.h"
-#include "Figure.h"
-#include "Explosion.h"
-#include <vector>
+#include "LinkedList.h"
 
 // Ромб движется слева направо
-class Line : public Figure {
+class Line {
 private:
-    std::vector<Symbol> symbols; // От хвоста к голове, максимум 30 символов.
+    LinkedList<Symbol> symbols; // От хвоста к голове.
     int length;
     int row;
     int width;
@@ -16,16 +14,12 @@ private:
     bool randomColor;
     int speed; // Скорость этой линии в символах в секунду.
     ULONGLONG startTime; // Запланированный момент рождения.
-    int probability;
-    int minRadius;
-    int maxRadius;
     void crawl(); // Меняем голову и хвост на один символ.
 
 public:
     Line(int lineLength, int lineSpeed, bool colorMode,
-        const Console& console, ULONGLONG birthTime,
-        int explosionProbability, int minExplosionRadius, int maxExplosionRadius);
-    bool update(ULONGLONG now, std::vector<Explosion>& explosions);
-    void draw(Console& console) const override;
-    bool isFinished() const override;
+        const Console& console, ULONGLONG birthTime);
+    bool update(ULONGLONG now); // Выполняем шаги, для которых уже настало время.
+    void draw(Console& console) const;
+    bool isFinished() const;
 };
